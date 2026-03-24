@@ -16,6 +16,8 @@ const translations = {
         "service2-desc": "Responsive, modern websites from landing pages to complex portals.",
         "service3-title": "Telegram Bots",
         "service3-desc": "Automation, chatbots, and integrations for your Telegram channels.",
+        "service4-title": "Help with Existing Projects",
+        "service4-desc": "Support, refactoring, and improvements for your ongoing projects.",
         "contact-title": "Get in Touch",
         "footer": "© 2026 David. All rights reserved.",
         "settings-title": "Settings",
@@ -40,6 +42,8 @@ const translations = {
         "service2-desc": "Адаптивные современные сайты от лендингов до сложных порталов.",
         "service3-title": "Telegram боты",
         "service3-desc": "Автоматизация, чат-боты и интеграции для ваших Telegram каналов.",
+        "service4-title": "Помощь с существующими проектами",
+        "service4-desc": "Поддержка, рефакторинг и улучшение ваших текущих проектов.",
         "contact-title": "Свяжитесь со мной",
         "footer": "© 2026 Давид. Все права защищены.",
         "settings-title": "Настройки",
@@ -64,6 +68,8 @@ const translations = {
         "service2-desc": "响应式现代网站，从登录页到复杂门户。",
         "service3-title": "Telegram 机器人",
         "service3-desc": "为您的 Telegram 频道提供自动化、聊天机器人和集成。",
+        "service4-title": "帮助现有项目",
+        "service4-desc": "为您正在进行的项目提供支持、重构和改进。",
         "contact-title": "联系我",
         "footer": "© 2026 大衛. 保留所有权利。",
         "settings-title": "设置",
@@ -108,6 +114,7 @@ function setBrightness(value) {
     if (slider) {
         slider.value = value;
         updateSliderFill(value);
+        updateBrightnessDisplay(value);
     }
 }
 
@@ -119,14 +126,29 @@ function updateSliderFill(value) {
     }
 }
 
-function openSidebar() {
-    document.getElementById('settingsSidebar').classList.add('open');
-    document.getElementById('sidebarOverlay').classList.add('active');
+function updateBrightnessDisplay(value) {
+    const percent = Math.round(((value - 0.5) / (1.5 - 0.5)) * 100);
+    const displaySpan = document.querySelector('.brightness-value');
+    if (displaySpan) {
+        displaySpan.textContent = `${percent}%`;
+    }
 }
 
-function closeSidebar() {
-    document.getElementById('settingsSidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
+function toggleSettingsPanel() {
+    const widget = document.querySelector('.floating-settings');
+    widget.classList.toggle('open');
+}
+
+function closeSettingsPanel() {
+    const widget = document.querySelector('.floating-settings');
+    widget.classList.remove('open');
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
 function loadPreferences() {
@@ -142,24 +164,44 @@ function loadPreferences() {
     }
 }
 
+// Scroll Reveal
+function initScrollReveal() {
+    const elements = document.querySelectorAll('.service-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.2 });
+    elements.forEach(el => observer.observe(el));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadPreferences();
+    initScrollReveal();
 
-    const settingsBtn = document.getElementById('settingsBtn');
-    const closeSidebarBtn = document.getElementById('closeSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
+    const settingsToggle = document.getElementById('settingsToggle');
+    const closePanel = document.getElementById('closePanel');
 
-    settingsBtn.addEventListener('click', openSidebar);
-    closeSidebarBtn.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
+    settingsToggle.addEventListener('click', toggleSettingsPanel);
+    closePanel.addEventListener('click', closeSettingsPanel);
+
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        const widget = document.querySelector('.floating-settings');
+        if (!widget.contains(e.target) && widget.classList.contains('open')) {
+            closeSettingsPanel();
+        }
+    });
 
     const brightnessSlider = document.getElementById('brightnessSlider');
     brightnessSlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         setBrightness(val);
-        updateSliderFill(val);
     });
-    updateSliderFill(parseFloat(brightnessSlider.value));
+    updateBrightnessDisplay(parseFloat(brightnessSlider.value));
 
     const themeToggle = document.getElementById('themeToggle');
     themeToggle.addEventListener('change', (e) => {
@@ -172,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && document.getElementById('settingsSidebar').classList.contains('open')) {
-            closeSidebar();
+        if (e.key === 'Escape') {
+            closeSettingsPanel();
         }
     });
 
@@ -186,7 +228,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     behavior: 'smooth',
                     block: 'start'
                 });
-                closeSidebar();
+                closeSettingsPanel();
+            }
+        });
+    });
+
+    // Copy contact info
+    document.querySelectorAll('.contact-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') return;
+            const textToCopy = item.getAttribute('data-copy');
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast(`Copied: ${textToCopy}`);
+                }).catch(() => {
+                    showToast('Failed to copy');
+                });
             }
         });
     });
